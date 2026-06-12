@@ -1629,6 +1629,28 @@ async function removeMember(name) {
   exitRemoveMembersMode();
   loadTeam();
 }
+
+  // ═══════════════════════════════════════════
+//  SESSION VALIDITY CHECK
+// ═══════════════════════════════════════════
+async function checkSessionValid() {
+  if (!currentUser) return;
+  const { data } = await sb.from(TABLE_MEMBERS).select('name').eq('name', currentUser.name).single();
+  if (!data) {
+    // User was removed — force logout
+    clearSession();
+    currentUser = null;
+    if (realtimeChannel) sb.removeChannel(realtimeChannel);
+    document.getElementById('app').classList.remove('visible');
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('inp-pass').value = '';
+    document.getElementById('inp-name').value = '';
+    alert('You have been removed from the team.');
+  }
+}
+
+// Check every 30 seconds
+setInterval(checkSessionValid, 30000);
 </script>
 </body>
 </html>
