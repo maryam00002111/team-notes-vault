@@ -859,7 +859,7 @@ async function loadFiles() {
 async function loadTeam() {
   let members = [];
   try {
-    const { data, error } = await sb.from(TABLE_MEMBERS).select('*').order('last_seen', { ascending: false });
+    const { data, error } = await sb.from(TABLE_MEMBERS).select('*').order('name', { ascending: true });
     if (!error && data) members = data;
   } catch(e) { console.error('loadTeam error:', e); }
 
