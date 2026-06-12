@@ -433,6 +433,12 @@
   /* ── SORT ACTIVE ── */
   #btn-sort-files.sort-asc::after  { content: ' ↑'; }
   #btn-sort-files.sort-desc::after { content: ' ↓'; }
+
+  /* ── REMOVE MEMBERS MODE ── */
+  .member-card.removable { cursor: pointer; border-color: rgba(239,68,68,0.35) !important; }
+  .member-card.removable:hover { background: rgba(239,68,68,0.08) !important; transform: scale(0.98); }
+  #remove-members-bar { display: none; }
+  #remove-members-bar.visible { display: flex !important; }
 </style>
 </head>
 <body>
@@ -592,9 +598,21 @@
         <div class="page-header">
           <div class="page-title-row">
             <div class="page-title">👥 Team</div>
+            <div class="actions">
+              <div class="dropdown">
+                <button class="icon-btn" style="font-size:20px;padding:4px 8px;" onclick="toggleDropdown(this)">⋮</button>
+                <div class="dropdown-menu">
+                  <div class="dropdown-item" onclick="enterRemoveMembersMode()">🗑️ Remove Members</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         <div class="team-view">
+          <div id="remove-members-bar" style="display:none;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--red);display:none;align-items:center;gap:8px;">
+            🗑️ Tap a member to remove them
+            <button onclick="exitRemoveMembersMode()" style="margin-left:auto;background:none;border:1px solid rgba(239,68,68,0.3);border-radius:6px;color:var(--red);padding:4px 10px;cursor:pointer;font-size:12px;">Cancel</button>
+          </div>
           <div class="section-label">Team Members</div>
           <div class="team-grid" id="team-grid">
             <div class="empty-state"><div class="es-icon">👤</div><h3>Loading…</h3></div>
@@ -1054,7 +1072,7 @@ function renderTeam(members) {
     const roleLabel = isOwner ? '👑 Owner' : '👤 Member';
     const roleClass = isOwner ? 'owner' : 'member';
     return `
-    <div class="member-card" ${isOwner ? 'style="border-color:rgba(245,158,11,0.35);background:rgba(245,158,11,0.04)"' : ''}>
+    <div class="member-card" onclick="removeMember('${esc(m.name)}')" ${isOwner ? 'style="border-color:rgba(245,158,11,0.35);background:rgba(245,158,11,0.04)"' : ''}>
       <div class="member-avatar" style="background:${getAvatarColor(m.name)};${isOwner ? 'box-shadow:0 0 0 2px rgba(245,158,11,0.4)' : ''}">${avatarLetter(m.name)}</div>
       <div class="member-role ${roleClass}">${roleLabel}</div>
       <div class="member-name">${escHtml(m.name)}</div>
@@ -1583,6 +1601,39 @@ function subjectContextMenu(e, name) {
 function esc(s) { return (s+'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
 function escHtml(s) {
   return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+  // ═══════════════════════════════════════════
+//  REMOVE MEMBERS MODE
+// ═══════════════════════════════════════════
+let removeMembersMode = false;
+
+function enterRemoveMembersMode() {
+  closeAllDropdowns();
+  removeMembersMode = true;
+  document.getElementById('remove-members-bar').classList.add('visible');
+  // Re-render team with removable class
+  const cards = document.querySelectorAll('#team-grid .member-card');
+  cards.forEach(card => card.classList.add('removable'));
+}
+
+function exitRemoveMembersMode() {
+  removeMembersMode = false;
+  document.getElementById('remove-members-bar').classList.remove('visible');
+  const cards = document.querySelectorAll('#team-grid .member-card');
+  cards.forEach(card => card.classList.remove('removable'));
+}
+
+async function removeMember(name) {
+  if (!removeMembersMode) return;
+  const confirmed = confirm(`Are you sure you want to remove "${name}"?`);
+  if (!confirmed) { exitRemoveMembersMode(); return; }
+
+  const { error } = await sb.from(TABLE_MEMBERS).delete().eq('name', name);
+  if (error) { showToast('Remove failed: ' + error.message, 'error'); return; }
+
+  showToast(`${name} removed.`);
+  exitRemoveMembersMode();
+  loadTeam();
 }
 </script>
 </body>
