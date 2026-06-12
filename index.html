@@ -862,19 +862,6 @@ async function loadTeam() {
     const { data, error } = await sb.from(TABLE_MEMBERS).select('*').order('name', { ascending: true });
     if (!error && data) members = data;
   } catch(e) { console.error('loadTeam error:', e); }
-
-  // Fallback: if table has no rows, derive from file uploaders
-  if (!members.length) {
-    const seen = new Set();
-    const names = allFiles.map(f => f.uploaded_by).filter(n => n && !seen.has(n) && seen.add(n));
-    members = names.map(n => ({ name: n, last_seen: null }));
-  }
-
-  // Always ensure current user is in the list
-  if (currentUser && !members.find(m => m.name === currentUser.name)) {
-    members.unshift({ name: currentUser.name, last_seen: new Date().toISOString() });
-  }
-
   renderTeam(members);
 }
 
