@@ -799,7 +799,7 @@ async function doLogin() {
   saveSession(user);
 
   // upsert member
-  await sb.from(TABLE_MEMBERS).upsert({ name, last_seen: new Date().toISOString() }, { onConflict: 'name' }).then();
+  await sb.from(TABLE_MEMBERS).upsert({ name }, { onConflict: 'name' }).then();
 
   currentUser = user;
   startApp();
