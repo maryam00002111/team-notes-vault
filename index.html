@@ -862,6 +862,13 @@ async function loadTeam() {
     const { data, error } = await sb.from(TABLE_MEMBERS).select('*').order('name', { ascending: true });
     if (!error && data) members = data;
   } catch(e) { console.error('loadTeam error:', e); }
+
+  // Only add current user if they are not already in the list
+  if (currentUser && !members.find(m => m.name === currentUser.name)) {
+    await sb.from(TABLE_MEMBERS).insert({ name: currentUser.name }).then();
+    members.push({ name: currentUser.name });
+  }
+
   renderTeam(members);
 }
 
